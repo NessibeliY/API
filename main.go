@@ -8,20 +8,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
 
-var (
-	db     *sql.DB
-	jwtKey = []byte("mysecretkey")
-)
-
-type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims
-}
+var db *sql.DB
 
 func main() {
 	f, _ := os.Create("gin.log")
