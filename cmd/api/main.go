@@ -14,10 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//TODO read cronjobs
+//TODO allowed origins корсы? добавить
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Println(err, nil) // return should be after this line?
+		log.Println(err, nil)
+		return
 	}
 
 	// connect to DB
@@ -28,13 +32,13 @@ func main() {
 	}
 	defer db.Close()
 
-	router := gin.Default()
-
 	err = database.Init(db)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	router := gin.Default()
 
 	database := user.NewUserDatabase(db)
 	services := services.NewUserServices(database)
@@ -42,6 +46,7 @@ func main() {
 
 	transport.Routes(router, cfg)
 
+	// TODO graceful shutdown
 	err = router.Run(fmt.Sprintf(":%v", cfg.Port))
 	if err != nil {
 		log.Fatal(err)

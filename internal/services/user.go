@@ -10,7 +10,7 @@ import (
 
 type UserStorage interface {
 	CreateUser(context.Context, *dto.SignupRequest, []byte) error
-	CheckUserInDB(context.Context, *dto.LoginRequest) error
+	CheckUser(context.Context, *dto.LoginRequest) error
 }
 
 type UserServices struct {
@@ -24,10 +24,10 @@ func NewUserServices(userStorage UserStorage) *UserServices {
 }
 
 func (us *UserServices) LoginUser(request *dto.LoginRequest) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) // TODO transport layer передает аргументос контекст, убрать отсюда
 	defer cancel()
 
-	err := us.userStorage.CheckUserInDB(ctx, request)
+	err := us.userStorage.CheckUser(ctx, request) // лучше обработать дто тут
 	if err != nil {
 		return err
 	}
@@ -41,8 +41,10 @@ func (us *UserServices) SignupUser(request *dto.SignupRequest) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) // TODO почему 3 секунды, почему 20 секунд
 	defer cancel()
+
+	// TODO check if user already exists
 
 	err = us.userStorage.CreateUser(ctx, request, hash)
 	if err != nil {

@@ -22,13 +22,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type userServices interface {
+const basicPrefic = "Basic " // difference between stack and heap
+
+type userServices interface { // TODO SOLID, пустой интерфейс. как интерфейсы го отличаются от других, утиная типизация, контракт (отличие го от С++), под капотом интерфейса есть тип и дата
 	SignupUser(*dto.SignupRequest) error
 	LoginUser(*dto.LoginRequest) error
 }
 
 type Transport struct {
 	services userServices
+	// cfg *config.Config глобальный
 }
 
 func NewTransport(services userServices) *Transport {
@@ -37,14 +40,14 @@ func NewTransport(services userServices) *Transport {
 
 func (t *Transport) Routes(router *gin.Engine, cfg *config.Config) {
 	// Set up session store
-	rdb, err := redisInternal.NewRedisClient()
+	rdb, err := redisInternal.NewRedisClient() // move to main
 	if err != nil {
 		log.Println("Failed to connect to Redis:", err)
 		return
 	}
 
 	// Apply the sessions middleware to the router
-	router.Use(sessions.Sessions("my_session", rdb))
+	router.Use(sessions.Sessions("my_session", rdb)) // TODO rename my_session to session?
 
 	// Public routes
 	router.POST("signup", t.Signup)
@@ -69,9 +72,8 @@ func (t *Transport) BasicAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		const basicPrefic = "Basic "
 		if !strings.HasPrefix(authHeader, basicPrefic) {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
+			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`) // TODO вынести повторения ошибок
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
 			return
 		}
@@ -111,7 +113,7 @@ func (t *Transport) BasicAuthMiddleware() gin.HandlerFunc {
 
 func (t *Transport) Login(ctx *gin.Context) {
 	var request dto.LoginRequest
-	err := ctx.ShouldBindJSON(&request)
+	err := ctx.ShouldBindJSON(&request) // TODO difference between bindjson and shouldbindjson
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -178,6 +180,7 @@ func GetSessionData(client *redis.Client, sessionID string) (string, error) {
 	return data, nil
 }
 
+//TODO pkg CheckPassword unit test, redis, вопросы к собесам
 func (t *Transport) Dashboard(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	user := session.Get("user")
