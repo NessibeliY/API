@@ -1,18 +1,22 @@
 package transport
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"errors"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/NessibeliY/API/config"
 	"github.com/NessibeliY/API/internal/dto"
 	"github.com/NessibeliY/API/internal/models"
-	"github.com/NessibeliY/API/internal/redis"
+	redisInternal "github.com/NessibeliY/API/internal/redis"
 	"github.com/NessibeliY/API/internal/validator"
+	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -33,14 +37,14 @@ func NewTransport(services userServices) *Transport {
 
 func (t *Transport) Routes(router *gin.Engine, cfg *config.Config) {
 	// Set up session store
-	store, err := redis.SetCacheInRedis()
+	rdb, err := redisInternal.NewRedisClient()
 	if err != nil {
 		log.Println("Failed to connect to Redis:", err)
 		return
 	}
 
 	// Apply the sessions middleware to the router
-	router.Use(sessions.Sessions("my_session", store))
+	router.Use(sessions.Sessions("my_session", rdb))
 
 	// Public routes
 	router.POST("signup", t.Signup)
@@ -122,26 +126,56 @@ func (t *Transport) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "user logged in"})
 
 	// If authentication is successful, set session
-	session := sessions.Default(ctx)
-	session.Set("user", request.Email)
-	session.Save()
+	sessionID := uuid.New().String()
+	ctx.Addcookie("session-id", sessionID, 60)
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "user logged in"})
+	sessionUser := models.SessionUserClient{
+		Email:         request.Email,
+		Authenticated: true,
+	}
+	err := redisClient.Set(sessionID, sessionUser, 60*time.Second)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot save session to redis"})
+		return
+	}
 }
 
-func (t *Transport) SessionAuthMiddleware() gin.HandlerFunc {
+func (t *Transport) SessionAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		session := sessions.Default(ctx)
-		user := session.Get("user")
-		if user == nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session unauthorized"})
+		cookie, err := ctx.Cookie("session-id")
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		sessionUser := models.SessionUserClient{}
+		err = redisClient.Get(cookie.Value, &sessionUser)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if auth := sessionUser.Authenticated; !auth {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		ctx.Next()
 	}
+}
+
+func GetSessionData(client *redis.Client, sessionID string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	data, err := client.Get(ctx, sessionKeyPrefix+sessionID).Result()
+	if err != nil {
+		return "", err
+	}
+	return data, nil
 }
 
 func (t *Transport) Dashboard(ctx *gin.Context) {

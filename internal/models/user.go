@@ -17,3 +17,8 @@ type User struct {
 	Email    string
 	Password []byte
 }
+
+type SessionUserClient struct {
+	Email        string
+	Authenticated bool
+}
