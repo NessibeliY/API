@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/NessibeliY/API/internal/dto"
+	"github.com/NessibeliY/API/internal/models"
 	"github.com/NessibeliY/API/pkg"
 )
 
@@ -13,13 +14,20 @@ type UserStorage interface {
 	CheckUser(context.Context, *dto.LoginRequest) error
 }
 
-type UserServices struct {
-	userStorage UserStorage
+type SessionStorage interface {
+	SetSessionData(context.Context, string, models.SessionUserClient, time.Duration) error
+	GetSessionData(context.Context, string, *models.SessionUserClient) error
 }
 
-func NewUserServices(userStorage UserStorage) *UserServices {
+type UserServices struct {
+	userStorage    UserStorage
+	sessionStorage SessionStorage
+}
+
+func NewUserServices(userStorage UserStorage, sessionStorage SessionStorage) *UserServices {
 	return &UserServices{
-		userStorage: userStorage,
+		userStorage:    userStorage,
+		sessionStorage: sessionStorage,
 	}
 }
 
@@ -47,6 +55,30 @@ func (us *UserServices) SignupUser(request *dto.SignupRequest) error {
 	// TODO check if user already exists
 
 	err = us.userStorage.CreateUser(ctx, request, hash)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (us *UserServices) SetSession(key string, value models.SessionUserClient, expiration time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := us.sessionStorage.SetSessionData(ctx, key, value, expiration)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (us *UserServices) GetSession(key string, dest *models.SessionUserClient) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := us.sessionStorage.GetSessionData(ctx, key, dest)
 	if err != nil {
 		return err
 	}

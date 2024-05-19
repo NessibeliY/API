@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/NessibeliY/API/internal/models"
@@ -11,30 +12,21 @@ import (
 
 const sessionKeyPrefix = "session:"
 
-func NewRedisClient() (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	return rdb, nil
+type SessionDatabase struct {
+	rdb *redis.Client
 }
 
-func SetSessionData(sessionID string, sessionUser models.SessionUserClient, expiration time.Duration) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+func NewSessionDatabase(rdb *redis.Client) *SessionDatabase {
+	return &SessionDatabase{rdb: rdb}
+}
 
+func (sdb *SessionDatabase) SetSessionData(ctx context.Context, key string, value models.SessionUserClient, expiration time.Duration) error {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
 
-	err = client.Set(ctx, sessionKeyPrefix+sessionID, jsonData, expiration).Err()
+	err = sdb.rdb.Set(ctx, key, p, expiration).Err()
 	if err != nil {
 		return err
 	}
@@ -42,28 +34,20 @@ func SetSessionData(sessionID string, sessionUser models.SessionUserClient, expi
 	return nil
 }
 
-func GetSessionData(client *redis.Client, sessionID string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	data, err := client.Get(ctx, sessionKeyPrefix+sessionID).Result()
+func (sdb *SessionDatabase) GetSessionData(ctx context.Context, key string, dest *models.SessionUserClient) error {
+	p, err := sdb.rdb.Get(ctx, key).Result()
 	if err != nil {
-		return "", err
-	}
-	return data, nil
-}
-
-func GetSessionUser(client *redis.Client, sessionID string) (*models.SessionUserClient, error) {
-	data, err := GetSessionData(client, sessionID)
-	if err != nil {
-		return nil, err
+		// Check if the error is because the key does not exist
+		if err == redis.Nil {
+			return fmt.Errorf("key does not exist: %v", key)
+		}
+		return err
 	}
 
-	var sessionUser models.SessionUserClient
-	err = json.Unmarshal([]byte(data), &sessionUser)
+	err = json.Unmarshal([]byte(p), dest)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &sessionUser, nil
+	return nil
 }

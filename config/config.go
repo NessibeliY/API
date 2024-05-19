@@ -10,12 +10,15 @@ import (
 const configFile = "config.yaml"
 
 type Config struct {
-	Host       string `yaml:"host"`
-	Port       int    `yaml:"port"`
-	DBPort     int    `yaml:"db_port"`
-	DBName     string `yaml:"db_name"`
-	DBUser     string `yaml:"db_user"`
-	DBPassword string `yaml:"db_password"`
+	Host          string `yaml:"host"`
+	Port          int    `yaml:"port"`
+	DBPort        int    `yaml:"db_port"`
+	DBName        string `yaml:"db_name"`
+	DBUser        string `yaml:"db_user"`
+	DBPassword    string `yaml:"db_password"`
+	RedisPort     string `yaml:"redis_port"`
+	RedisPassword string `yaml:"redis_password"`
+	RedisDB       int    `yaml:"redis_db"`
 }
 
 func Load() (*Config, error) {

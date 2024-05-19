@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"context"
@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/NessibeliY/API/config"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
-func openDB(cfg config.Config) (*sql.DB, error) { // move to pkg or read about infrastructure
+func OpenDB(cfg *config.Config) (*sql.DB, error) { // move to pkg or read about infrastructure
 	dns := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		cfg.Host, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
@@ -35,11 +36,22 @@ func openDB(cfg config.Config) (*sql.DB, error) { // move to pkg or read about i
 	return db, nil
 }
 
-// func openRedis(cfg config.Config) (redis.Store, error) {
-// 	store, err := redis.NewStore(10, "tcp", "localhost:6379", "", []byte("secret"))
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func OpenRedisDB(cfg *config.Config) (*redis.Client, error) {
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.RedisPort)
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
 
-// 	return store, nil
-// }
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := rdb.Ping(ctx).Err()
+	if err != nil {
+		return nil, errors.Wrap(err, "connection to Redis is not established")
+	}
+
+	log.Println("Connected to Redis")
+	return rdb, nil
+}

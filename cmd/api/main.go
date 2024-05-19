@@ -6,16 +6,16 @@ import (
 
 	"github.com/NessibeliY/API/config"
 	"github.com/NessibeliY/API/internal/database"
+	"github.com/NessibeliY/API/internal/database/user"
+	"github.com/NessibeliY/API/internal/redis"
 	"github.com/NessibeliY/API/internal/services"
 	"github.com/NessibeliY/API/internal/transport"
-
-	"github.com/NessibeliY/API/internal/database/user"
-
+	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
 )
 
-//TODO read cronjobs
-//TODO allowed origins корсы? добавить
+// TODO read cronjobs
+// TODO allowed origins корсы? добавить
 
 func main() {
 	cfg, err := config.Load()
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// connect to DB
-	db, err := openDB(*cfg)
+	db, err := pkg.OpenDB(cfg)
 	if err != nil {
 		log.Println(err)
 		return
@@ -38,13 +38,21 @@ func main() {
 		return
 	}
 
+	// Set up Redis DB
+	rdb, err := pkg.OpenRedisDB(cfg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	router := gin.Default()
 
 	database := user.NewUserDatabase(db)
-	services := services.NewUserServices(database)
+	redisDatabase := redis.NewSessionDatabase(rdb)
+	services := services.NewUserServices(database, redisDatabase)
 	transport := transport.NewTransport(services)
 
-	transport.Routes(router, cfg)
+	transport.Routes(router)
 
 	// TODO graceful shutdown
 	err = router.Run(fmt.Sprintf(":%v", cfg.Port))

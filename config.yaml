@@ -4,3 +4,6 @@ db_port: 5432
 db_name: postgres
 db_user: postgres
 db_password: postgres
+redis_port: 6379
+redis_password:
+redis_db: 0

@@ -19,6 +19,6 @@ type User struct {
 }
 
 type SessionUserClient struct {
-	Email        string
+	Email         string
 	Authenticated bool
 }

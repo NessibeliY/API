@@ -1,24 +1,20 @@
 package transport
 
 import (
-	"context"
 	"database/sql"
-	"encoding/base64"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/NessibeliY/API/config"
 	"github.com/NessibeliY/API/internal/dto"
 	"github.com/NessibeliY/API/internal/models"
-	redisInternal "github.com/NessibeliY/API/internal/redis"
 	"github.com/NessibeliY/API/internal/validator"
-	"github.com/go-redis/redis/v8"
+
 	"github.com/google/uuid"
 
 	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +23,8 @@ const basicPrefic = "Basic " // difference between stack and heap
 type userServices interface { // TODO SOLID, пустой интерфейс. как интерфейсы го отличаются от других, утиная типизация, контракт (отличие го от С++), под капотом интерфейса есть тип и дата
 	SignupUser(*dto.SignupRequest) error
 	LoginUser(*dto.LoginRequest) error
+	SetSession(string, models.SessionUserClient, time.Duration) error
+	GetSession(string, *models.SessionUserClient) error
 }
 
 type Transport struct {
@@ -38,16 +36,11 @@ func NewTransport(services userServices) *Transport {
 	return &Transport{services: services}
 }
 
-func (t *Transport) Routes(router *gin.Engine, cfg *config.Config) {
-	// Set up session store
-	rdb, err := redisInternal.NewRedisClient() // move to main
-	if err != nil {
-		log.Println("Failed to connect to Redis:", err)
-		return
-	}
-
+func (t *Transport) Routes(router *gin.Engine) {
 	// Apply the sessions middleware to the router
-	router.Use(sessions.Sessions("my_session", rdb)) // TODO rename my_session to session?
+	// router.Use(sessions.Sessions("my_session", rdb)) // TODO rename my_session to session?
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
 
 	// Public routes
 	router.POST("signup", t.Signup)
@@ -60,54 +53,6 @@ func (t *Transport) Routes(router *gin.Engine, cfg *config.Config) {
 	protected.Use(t.SessionAuthMiddleware())
 	{
 		protected.GET("/dashboard", t.Dashboard)
-	}
-}
-
-func (t *Transport) BasicAuthMiddleware() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		authHeader := ctx.GetHeader("Authorization")
-		if authHeader == "" {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
-			return
-		}
-
-		if !strings.HasPrefix(authHeader, basicPrefic) {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`) // TODO вынести повторения ошибок
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
-			return
-		}
-
-		payload := strings.TrimPrefix(authHeader, basicPrefic)
-		decoded, err := base64.StdEncoding.DecodeString(payload)
-		if err != nil {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
-			return
-		}
-
-		pair := strings.Split(string(decoded), ":")
-		if len(pair) != 2 {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
-			return
-		}
-
-		username := pair[0]
-		password := pair[1]
-
-		// Check if username and password are not empty
-		if username == "" || password == "" {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
-			return
-		}
-
-		// Store the username and password in the context
-		ctx.Set("username", username)
-		ctx.Set("password", password)
-
-		ctx.Next()
 	}
 }
 
@@ -128,33 +73,60 @@ func (t *Transport) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "user logged in"})
 
 	// If authentication is successful, set session
+	// session := sessions.Default(ctx)
 	sessionID := uuid.New().String()
-	ctx.Addcookie("session-id", sessionID, 60)
-
+	// session.Set("session-id", sessionID)
+	// session.Set("user", request.Email)
+	// session.Options(sessions.Options{
+	// 	Path:     "/",
+	// 	MaxAge:   60 * 1,
+	// 	HttpOnly: true,
+	// })
+	// if err = session.Save(); err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save session"})
+	// 	return
+	// }
+	fmt.Println("SessionID uuid", sessionID)
+	ctx.SetCookie("session-id", sessionID, 100, "/", "localhost", false, true)
 	sessionUser := models.SessionUserClient{
 		Email:         request.Email,
 		Authenticated: true,
 	}
-	err := redisClient.Set(sessionID, sessionUser, 60*time.Second)
+	ctx.SetCookie("user", sessionUser.Email, 100, "/", "localhost", false, true)
+
+	err = t.services.SetSession(sessionID, sessionUser, 60*time.Second)
+	co, _ := ctx.Cookie("session-id")
+	fmt.Println("SessionID set", co)
+	// fmt.Println("Session ID set:", session.Get("session-id"))
+	// fmt.Println("User set:", session.Get("user"))
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot save session to redis"})
 		return
 	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "user logged in", "session-id": sessionID})
 }
 
-func (t *Transport) SessionAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
+func (t *Transport) SessionAuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// session := sessions.Default(ctx)
+		// sessionID := session.Get("session-id")
+		// fmt.Println("Session ID in middleware:", sessionID)
+		// if sessionID == nil {
+		// 	ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "unauthorized"})
+		// 	return
+		// }
 		cookie, err := ctx.Cookie("session-id")
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		fmt.Println("SessionID in middleware", cookie)
 
 		sessionUser := models.SessionUserClient{}
-		err = redisClient.Get(cookie.Value, &sessionUser)
+		err = t.services.GetSession(cookie, &sessionUser)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -169,21 +141,12 @@ func (t *Transport) SessionAuthMiddleware(redisClient *redis.Client) gin.Handler
 	}
 }
 
-func GetSessionData(client *redis.Client, sessionID string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	data, err := client.Get(ctx, sessionKeyPrefix+sessionID).Result()
-	if err != nil {
-		return "", err
-	}
-	return data, nil
-}
-
-//TODO pkg CheckPassword unit test, redis, вопросы к собесам
+// TODO pkg CheckPassword unit test, redis, вопросы к собесам
 func (t *Transport) Dashboard(ctx *gin.Context) {
-	session := sessions.Default(ctx)
-	user := session.Get("user")
+	user, err := ctx.Cookie("user")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to your dashboard",
