@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const configFile = "config.yaml"
+const configFile = "configs/config.yaml"
 
 type Config struct {
 	Host          string `yaml:"host"`
@@ -16,9 +16,11 @@ type Config struct {
 	DBName        string `yaml:"db_name"`
 	DBUser        string `yaml:"db_user"`
 	DBPassword    string `yaml:"db_password"`
+	DBHost        string `yaml:"db_host"`
 	RedisPort     string `yaml:"redis_port"`
 	RedisPassword string `yaml:"redis_password"`
 	RedisDB       int    `yaml:"redis_db"`
+	RedisHost     string `yaml:"redis_host"`
 }
 
 func Load() (*Config, error) {

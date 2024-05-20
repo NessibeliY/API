@@ -1,8 +1,15 @@
 # API
-<p>This project is currently being developed.</p>
+This project is currently being developed.
+
+1. Run
+```bash
+docker network create myNetwork
+```
+2. Run
+```bash
+docker-compose up --build
+```
 
 
 
-
-<br>
 

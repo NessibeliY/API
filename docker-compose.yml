@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   postgres:
-    container_name: postgres_db
+    # hostname: 172.18.0.3
+    container_name: postgres_container
     image: postgres:latest
     environment:
       POSTGRES_DB: "postgres"
@@ -10,30 +11,42 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - "postgres_data:/data/db"
+      - "postgres_data:/var/lib/postgresql/data"
 
   redis:
-    container_name: redis
+    # hostname: 172.18.0.2
+    container_name: redis_container
     image: redis:latest
     ports:
       - "6379:6379"
     volumes:
       - "redis_data:/data"
 
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: ./cmd/api/Dockerfile
-  #   ports:
-  #     - "4000:8080"  # Adjust based on your configuration
-  #   environment:
-  #     CONFIG_FILE: config.yaml
-  #   volumes:
-  #     - .:.
-  #   depends_on:
-  #     - postgres
-  #     - redis
+  api:
+    container_name: go_container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+      - "go_data:/api"
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+networks:
+  default:
+    external:
+      name: myNetwork
 
 volumes:
   postgres_data:
   redis_data:
+  go_data:
