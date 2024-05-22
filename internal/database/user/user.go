@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+
 type UserDatabase struct {
 	db *sql.DB
 }

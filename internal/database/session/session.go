@@ -1,4 +1,4 @@
-package redis
+package session
 
 import (
 	"context"

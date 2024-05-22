@@ -22,24 +22,24 @@ services:
     volumes:
       - "redis_data:/data"
 
-  api:
-    container_name: go_container
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "4000:4000"
-    volumes:
-      - "go_data:/api"
-    depends_on:
-      - postgres
-      - redis
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: always
+  # api:
+  #   container_name: go_container
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "4000:4000"
+  #   volumes:
+  #     - "go_data:/api"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: always
 
 networks:
   default:

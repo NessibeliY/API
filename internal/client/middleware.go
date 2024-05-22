@@ -1,15 +1,17 @@
-package transport
+package client
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/NessibeliY/API/internal/models"
 	"github.com/gin-gonic/gin"
 )
 
 // TODO move all middlewares here
-func (t *Transport) BasicAuthMiddleware() gin.HandlerFunc {
+func (c *Client) BasicAuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
@@ -52,6 +54,31 @@ func (t *Transport) BasicAuthMiddleware() gin.HandlerFunc {
 		// Store the username and password in the context
 		ctx.Set("username", username)
 		ctx.Set("password", password)
+
+		ctx.Next()
+	}
+}
+
+func (c *Client) SessionAuthMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		cookie, err := ctx.Cookie("session-id")
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		fmt.Println("SessionID in middleware", cookie)
+
+		sessionUser := models.SessionUserClient{}
+		err = c.sessionServices.GetSession(cookie, &sessionUser)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if auth := sessionUser.Authenticated; !auth {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
 		ctx.Next()
 	}
