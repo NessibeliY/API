@@ -1,0 +1,41 @@
+package pkg_test
+
+import (
+	"testing"
+
+	"github.com/NessibeliY/API/pkg"
+)
+
+func TestContains(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []string
+		item  string
+		want  bool
+	}{
+		{
+			name:  "good case",
+			slice: []string{"apple", "banana", "pear"},
+			item:  "banana",
+			want:  true,
+		},
+		{
+			name:  "bad case",
+			slice: []string{"apple", "banana", "pear"},
+			item:  "appl",
+			want:  false,
+		},
+	}
+
+	for _,tt:=range tests {
+		t.Run(tt.name,func(t *testing.T) {
+			got:=pkg.Contains(tt.slice,tt.item)
+
+			if got!=tt.want {
+				t.Errorf("got %t;\nwant %t", got, true)
+			}
+		})
+	}
+
+
+}

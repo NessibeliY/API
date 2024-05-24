@@ -56,7 +56,7 @@ func (c *Client) Login(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "user logged in", "session-id": sessionID})
 }
 
-// TODO pkg CheckPassword unit test, redis, вопросы к собесам
+// TODO pkg CheckPassword unit test, вопросы к собесам
 func (c *Client) Dashboard(ctx *gin.Context) {
 	user, err := ctx.Cookie("user")
 	if err != nil {
