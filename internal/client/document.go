@@ -11,8 +11,14 @@ import (
 
 func (c *Client) CreateClientDocument(ctx *gin.Context) {
 	date := time.Now()
+	userEmail, err := ctx.Cookie("user")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	var request dto.CreateDocumentRequest
-	err := ctx.ShouldBindJSON(&request)
+	err = ctx.ShouldBindJSON(&request)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -25,7 +31,7 @@ func (c *Client) CreateClientDocument(ctx *gin.Context) {
 		return
 	}
 
-	err = c.documentServices.AddInfoAndCreateDocument(&request, date)
+	err = c.documentServices.AddInfoAndCreateDocument(&request, date, userEmail)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

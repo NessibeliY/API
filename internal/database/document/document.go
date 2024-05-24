@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/NessibeliY/API/internal/models"
+	"github.com/google/uuid"
 )
 
 type DocumentDatabase struct {
@@ -29,6 +30,21 @@ func (ddb *DocumentDatabase) CreateDocument(ctx context.Context, document *model
 		return err
 	}
 	return nil
+}
+
+func (ddb *DocumentDatabase) GetAuthorIDByEmail(ctx context.Context, userEmail string) (uuid.UUID, error) {
+	var authorID uuid.UUID
+
+	query := `
+	SELECT id
+	FROM users
+	WHERE email=$1;`
+
+	err := ddb.db.QueryRowContext(ctx, query, userEmail).Scan(&authorID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return authorID, nil
 }
 
 func (ddb *DocumentDatabase) ReadDocument(ctx context.Context, title string) (*models.Document, error) {

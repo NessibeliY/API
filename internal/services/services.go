@@ -22,7 +22,7 @@ type SessionServices interface {
 }
 
 type DocumentServices interface {
-	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time) error
+	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
 	ShowDocument(*dto.ShowDocumentRequest) (*models.Document, error)
 }
 

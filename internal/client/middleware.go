@@ -7,10 +7,31 @@ import (
 	"strings"
 
 	"github.com/NessibeliY/API/internal/models"
+	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
 )
 
-// TODO move all middlewares here
+func (c *Client) CORSMiddleware() gin.HandlerFunc {
+	allowedOrigins := []string{"http://google.com", "http://facebook.com"}
+	return func(ctx *gin.Context) {
+		origin := ctx.Request.Header.Get("Origin")
+
+		if pkg.Contains(allowedOrigins, origin) {
+			ctx.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		ctx.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		ctx.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		ctx.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+		if ctx.Request.Method == "OPTIONS" {
+			ctx.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		ctx.Next()
+	}
+}
+
 func (c *Client) BasicAuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")

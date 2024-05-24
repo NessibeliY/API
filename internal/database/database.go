@@ -11,6 +11,7 @@ import (
 	"github.com/NessibeliY/API/internal/dto"
 	"github.com/NessibeliY/API/internal/models"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 )
 
 type UserDatabase interface {
@@ -26,6 +27,7 @@ type SessionDatabase interface {
 type DocumentDatabase interface {
 	CreateDocument(context.Context, *models.Document) error
 	ReadDocument(context.Context, string) (*models.Document, error)
+	GetAuthorIDByEmail(context.Context, string) (uuid.UUID, error)
 }
 
 type Database struct {

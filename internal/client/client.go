@@ -9,7 +9,7 @@ import (
 )
 
 type DocumentServices interface {
-	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time) error
+	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
 	ShowDocument(*dto.ShowDocumentRequest) (*models.Document, error)
 }
 
@@ -27,7 +27,6 @@ type Client struct {
 	userServices     UserServices
 	sessionServices  SessionServices
 	documentServices DocumentServices
-	// cfg *config.Config глобальный
 }
 
 func NewClient(srv *services.Services) *Client {

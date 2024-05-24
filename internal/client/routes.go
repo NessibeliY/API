@@ -7,10 +7,12 @@ import (
 )
 
 func (c *Client) Routes(router *gin.Engine) {
+	// Apply the CORS middleware
+	router.Use(c.CORSMiddleware())
+
 	// Apply the sessions middleware to the router
-	// router.Use(sessions.Sessions("my_session", rdb)) // TODO rename my_session to session?
 	store := cookie.NewStore([]byte("secret"))
-	router.Use(sessions.Sessions("mysession", store))
+	router.Use(sessions.Sessions("session123", store))
 
 	// Public routes
 	router.POST("signup", c.Signup)

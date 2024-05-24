@@ -14,6 +14,7 @@ import (
 type DocumentDatabase interface {
 	CreateDocument(context.Context, *models.Document) error
 	ReadDocument(context.Context, string) (*models.Document, error)
+	GetAuthorIDByEmail(context.Context, string) (uuid.UUID, error)
 }
 
 type DocumentServices struct {
@@ -26,7 +27,7 @@ func NewDocumentServices(documentDatabase DocumentDatabase) *DocumentServices {
 	}
 }
 
-func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocumentRequest, date time.Time) error {
+func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocumentRequest, date time.Time, userEmail string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -36,12 +37,21 @@ func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocument
 		return fmt.Errorf("Such title already exists")
 	}
 
+	authorID, err := ds.documentDatabase.GetAuthorIDByEmail(ctx, userEmail)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("The user is not logged in")
+	}
+	if err != nil {
+		return err
+	}
+
 	processedRequest := &models.Document{
 		ID:          uuid.New(),
 		Title:       request.Title,
 		Content:     request.Content,
 		ImagePath:   request.ImagePath,
 		DateCreated: date,
+		AuthorID:    authorID,
 	}
 
 	// Create document
