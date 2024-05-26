@@ -9,11 +9,11 @@ import (
 type CreateDocumentRequest struct {
 	Title     string `json:"title" validate:"required,min=5"`
 	Content   string `json:"content" validate:"required,min=5"`
-	ImagePath string `json:"image-path"`
+	ImagePath string `json:"image_path"`
 }
 
 type ShowDocumentRequest struct {
-	Title string `json:"title" validate:"required"`
+	DocumentID int64 `json:"documentID" validate:"required"`
 }
 
 type CreateDocumentResponse struct { // TODO response should be sent to client

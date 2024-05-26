@@ -18,13 +18,12 @@ func NewDocumentDatabase(db *sql.DB) *DocumentDatabase {
 	}
 }
 
-func (ddb *DocumentDatabase) CreateDocument(ctx context.Context, document *models.Document) error {
+func (d *DocumentDatabase) CreateDocument(ctx context.Context, document *models.Document) error {
 	query := `
 	INSERT INTO documents (id, title, content, image_path, author_id, date_created)
-	VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING id;`
+	VALUES ($1, $2, $3, $4, $5, $6);`
 
-	_, err := ddb.db.ExecContext(ctx, query, document.ID, document.Title,
+	_, err := d.db.ExecContext(ctx, query, document.ID, document.Title,
 		document.Content, document.ImagePath, document.AuthorID, document.DateCreated)
 	if err != nil {
 		return err
@@ -32,7 +31,7 @@ func (ddb *DocumentDatabase) CreateDocument(ctx context.Context, document *model
 	return nil
 }
 
-func (ddb *DocumentDatabase) GetAuthorIDByEmail(ctx context.Context, userEmail string) (uuid.UUID, error) {
+func (d *DocumentDatabase) GetAuthorIDByEmail(ctx context.Context, userEmail string) (uuid.UUID, error) {
 	var authorID uuid.UUID
 
 	query := `
@@ -40,14 +39,14 @@ func (ddb *DocumentDatabase) GetAuthorIDByEmail(ctx context.Context, userEmail s
 	FROM users
 	WHERE email=$1;`
 
-	err := ddb.db.QueryRowContext(ctx, query, userEmail).Scan(&authorID)
+	err := d.db.QueryRowContext(ctx, query, userEmail).Scan(&authorID)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	return authorID, nil
 }
 
-func (ddb *DocumentDatabase) ReadDocument(ctx context.Context, title string) (*models.Document, error) {
+func (d *DocumentDatabase) ReadDocument(ctx context.Context, title string) (*models.Document, error) {
 	query := `
 	SELECT id, content, image_path, author_id, date_created
 	FROM documents
@@ -55,7 +54,7 @@ func (ddb *DocumentDatabase) ReadDocument(ctx context.Context, title string) (*m
 
 	document := &models.Document{Title: title}
 
-	err := ddb.db.QueryRowContext(ctx, query, title).Scan(
+	err := d.db.QueryRowContext(ctx, query, title).Scan(
 		&document.ID,
 		&document.Content,
 		&document.ImagePath,

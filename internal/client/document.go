@@ -11,10 +11,10 @@ import (
 
 func (c *Client) CreateClientDocument(ctx *gin.Context) {
 	date := time.Now()
-	userEmail, err := ctx.Cookie("user")
+	userEmail, err := ctx.Cookie("user") // TODO "user" move to value/contants
 	baseResponse := dto.BaseResponse{
 		Message: "failed to extract cookie \"user\" from request",
-		Status:  http.StatusInternalServerError,
+		Status:  http.StatusUnauthorized,
 		Err:     err,
 	}
 	if err != nil {
@@ -46,7 +46,7 @@ func (c *Client) CreateClientDocument(ctx *gin.Context) {
 		return
 	}
 
-	err = c.documentServices.AddInfoAndCreateDocument(&request, date, userEmail)
+	err = c.documentServices.CreateDocument(&request, date, userEmail)
 	baseResponse = dto.BaseResponse{
 		Message: "failed to create document",
 		Status:  http.StatusBadRequest,
@@ -59,7 +59,7 @@ func (c *Client) CreateClientDocument(ctx *gin.Context) {
 
 	createDocumentResponse := dto.CreateDocumentResponse{
 		BaseResponse: dto.BaseResponse{
-			Message: "document successfully created",
+			Message: "document successfully created", // TODO move messages to value/contants
 			Status:  http.StatusOK,
 			Err:     nil,
 		},
@@ -77,7 +77,7 @@ func (c *Client) ShowClientDocument(ctx *gin.Context) {
 		Err:     err,
 	}
 	if err != nil {
-		ctx.JSON(baseResponse.Status, baseResponse)
+		ctx.Error(err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (c *Client) ShowClientDocument(ctx *gin.Context) {
 		Err:     err,
 	}
 	if err != nil {
-		ctx.JSON(baseResponse.Status, baseResponse)
+		ctx.Error(err) // TODO ctx.Error middleware that processes gin errors that reads status from Error
 		return
 	}
 

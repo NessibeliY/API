@@ -9,8 +9,8 @@ import (
 )
 
 type DocumentServices interface {
-	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
-	ShowDocument(*dto.ShowDocumentRequest) (*models.Document, error)
+	CreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
+	GetDocument(*dto.ShowDocumentRequest) (*models.Document, error)
 }
 
 type UserServices interface { // TODO SOLID, пустой интерфейс. как интерфейсы го отличаются от других, утиная типизация, контракт (отличие го от С++), под капотом интерфейса есть тип и дата

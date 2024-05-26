@@ -3,6 +3,7 @@ package document
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,19 +28,19 @@ func NewDocumentServices(documentDatabase DocumentDatabase) *DocumentServices {
 	}
 }
 
-func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocumentRequest, date time.Time, userEmail string) error {
+func (ds *DocumentServices) CreateDocument(request *dto.CreateDocumentRequest, date time.Time, userEmail string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) // TODO move 3*time.Second to value/constants
 	defer cancel()
 
 	// Check if document already exists
 	_, err := ds.documentDatabase.ReadDocument(ctx, request.Title)
 	if err != sql.ErrNoRows {
-		return fmt.Errorf("Such title already exists")
+		return errors.New("Such title already exists")
 	}
 
 	authorID, err := ds.documentDatabase.GetAuthorIDByEmail(ctx, userEmail)
 	if err == sql.ErrNoRows {
-		return fmt.Errorf("The user is not logged in")
+		return errors.New("The user is not logged in")
 	}
 	if err != nil {
 		return err
@@ -65,7 +66,7 @@ func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocument
 	return nil
 }
 
-func (ds *DocumentServices) ShowDocument(request *dto.ShowDocumentRequest) (*models.Document, error) {
+func (ds *DocumentServices) GetDocument(request *dto.ShowDocumentRequest) (*models.Document, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 

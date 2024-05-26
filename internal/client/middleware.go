@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (c *Client) CORSMiddleware() gin.HandlerFunc {
+func (c *Client) CORSMiddleware() gin.HandlerFunc { // TODO gin CORS
 	allowedOrigins := []string{"http://google.com", "http://facebook.com"}
 	return func(ctx *gin.Context) {
 		origin := ctx.Request.Header.Get("Origin")

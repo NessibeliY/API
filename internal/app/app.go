@@ -83,7 +83,7 @@ func Run() {
 
 	// Attempt graceful server shutdown
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		log.Fatal("Server forced to shutdown:", err) // TODO move graceful shutdown to pkg and input only ctx from main.go
 	}
 
 	log.Println("Server exiting")

@@ -22,8 +22,8 @@ type SessionServices interface {
 }
 
 type DocumentServices interface {
-	AddInfoAndCreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
-	ShowDocument(*dto.ShowDocumentRequest) (*models.Document, error)
+	CreateDocument(*dto.CreateDocumentRequest, time.Time, string) error
+	GetDocument(*dto.ShowDocumentRequest) (*models.Document, error)
 }
 
 type Services struct {

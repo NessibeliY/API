@@ -26,7 +26,7 @@ func (sdb *SessionDatabase) SetSessionData(ctx context.Context, key string, valu
 		return err
 	}
 
-	err = sdb.rdb.Set(ctx, key, p, expiration).Err()
+	err = sdb.rdb.Set(ctx, key, p, expiration).Err()//key=user, value=userID
 	if err != nil {
 		return err
 	}
