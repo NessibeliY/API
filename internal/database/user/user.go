@@ -3,14 +3,13 @@ package user
 import (
 	"context"
 	"database/sql"
-	"errors"
 
 	"github.com/NessibeliY/API/internal/dto"
 	"github.com/NessibeliY/API/internal/models"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
-
 
 type UserDatabase struct {
 	db *sql.DB
@@ -34,12 +33,17 @@ func (udb *UserDatabase) CreateUser(ctx context.Context, request *dto.SignupRequ
 	}
 
 	err := udb.db.QueryRowContext(ctx, query, user.ID, user.Username, user.Email, user.Password).Scan(&user.ID)
-	switch { // TODO должен быть в сервис, вынести switch
 
-	case errors.Is(err, errors.New(`pq: duplicate key value violates unique constraint "users_email_key"`)): // TODO postgres.Err
-		return models.ErrDuplicateEmail
-	case err != nil:
-		return err
+	// Use pq error code to handle specific PostgreSQL errors
+	if pqErr, ok := err.(*pq.Error); ok { // TODO должен быть в сервис, вынести switch
+		switch pqErr.Code {
+		case "23505": // unique_violation
+			if pqErr.Constraint == "users_email_key" {
+				return models.ErrDuplicateEmail
+			}
+		default:
+			return err
+		}
 	}
 
 	return nil

@@ -29,9 +29,8 @@ func Init(db *sql.DB) error {
 		title text UNIQUE NOT NULL,
 		content text NOT NULL,
 		image_path text,
-		author_id uuid,
-		date_created timestamp NOT NULL,
-		FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+		author_id uuid REFERENCES users(id) ON DELETE CASCADE,
+		date_created timestamp NOT NULL
 	);`
 
 	_, err = db.ExecContext(ctx, query2)

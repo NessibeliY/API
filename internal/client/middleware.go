@@ -33,32 +33,32 @@ func (c *Client) CORSMiddleware() gin.HandlerFunc {
 }
 
 func (c *Client) BasicAuthMiddleware() gin.HandlerFunc {
+	unauthorized := func(ctx *gin.Context) {
+		ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+	}
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+			unauthorized(ctx)
 			return
 		}
 
 		if !strings.HasPrefix(authHeader, basicPrefic) {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`) // TODO вынести повторения ошибок
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+			unauthorized(ctx)
 			return
 		}
 
 		payload := strings.TrimPrefix(authHeader, basicPrefic)
 		decoded, err := base64.StdEncoding.DecodeString(payload)
 		if err != nil {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+			unauthorized(ctx)
 			return
 		}
 
 		pair := strings.Split(string(decoded), ":")
 		if len(pair) != 2 {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+			unauthorized(ctx)
 			return
 		}
 
@@ -67,8 +67,7 @@ func (c *Client) BasicAuthMiddleware() gin.HandlerFunc {
 
 		// Check if username and password are not empty
 		if username == "" || password == "" {
-			ctx.Header("WWW-Authenticate", `Basic realm="Restricted"`)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "message": "user not authorized"})
+			unauthorized(ctx)
 			return
 		}
 

@@ -1,8 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/NessibeliY/API/internal/client"
 	"github.com/NessibeliY/API/internal/config"
@@ -11,9 +17,6 @@ import (
 	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
 )
-
-// TODO read cronjobs
-// TODO allowed origins корсы? добавить
 
 func Run() {
 	cfg, err := config.Load()
@@ -51,9 +54,37 @@ func Run() {
 
 	client.Routes(router)
 
-	// TODO graceful shutdown
-	err = router.Run(fmt.Sprintf(":%v", cfg.Port))
-	if err != nil {
-		log.Fatal(err)
+	// Graceful shutdown
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%v", cfg.Port),
+		Handler: router,
 	}
+
+	// Channel to listen for termination signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+	log.Printf("Server is running on port %v", cfg.Port)
+
+	// Wait for a termination signal
+	<-quit
+	log.Println("Shutting down server...")
+
+	// Create a deadline to wait for server shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt graceful server shutdown
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }
