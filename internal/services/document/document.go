@@ -28,7 +28,7 @@ func NewDocumentServices(documentDatabase DocumentDatabase) *DocumentServices {
 }
 
 func (ds *DocumentServices) AddInfoAndCreateDocument(request *dto.CreateDocumentRequest, date time.Time, userEmail string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) // TODO move 3*time.Second to value/constants
 	defer cancel()
 
 	// Check if document already exists
@@ -73,6 +73,7 @@ func (ds *DocumentServices) ShowDocument(request *dto.ShowDocumentRequest) (*mod
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("Such title does not exist")
 	}
+
 	if err != nil {
 		return nil, err
 	}

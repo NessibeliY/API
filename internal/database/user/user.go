@@ -54,14 +54,14 @@ func (udb *UserDatabase) CheckUser(ctx context.Context, request *dto.LoginReques
 	// TODO sql injection
 
 	var storedPassword []byte
-	err := udb.db.QueryRowContext(ctx, query, request.Email).Scan(&storedPassword)
+	err := udb.db.QueryRowContext(ctx, query, request.Email).Scan(&storedPassword) // TODO QueryRowContext and QueryRow
 	if err != nil {
 		return err
 	}
 
 	err = bcrypt.CompareHashAndPassword(storedPassword, []byte(request.Password)) // TODO проверка должна быть на уровень выше
 	if err != nil {
-		return models.ErrPasswordNotCorrect
+		return models.ErrPasswordNotCorrect // TODO errors store in value/errors client or non-client errors
 	}
 
 	return nil
