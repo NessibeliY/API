@@ -8,6 +8,7 @@ docker network create myNetwork
 2. Run
 ```bash
 docker-compose up --build
+go run ./cmd/api/
 ```
 
 
