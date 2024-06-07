@@ -13,7 +13,7 @@ type CreateDocumentRequest struct {
 }
 
 type ShowDocumentRequest struct {
-	DocumentID int64 `json:"documentID" validate:"required"`
+	DocumentID uint64 `json:"documentID" validate:"required"`
 }
 
 type CreateDocumentResponse struct { // TODO response should be sent to client

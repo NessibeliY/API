@@ -7,7 +7,7 @@ import (
 )
 
 type Document struct {
-	ID          uuid.UUID
+	ID          uint64
 	Title       string
 	Content     string
 	ImagePath   string

@@ -89,7 +89,7 @@ func (c *Client) SessionAuthMiddleware() gin.HandlerFunc {
 		fmt.Println("SessionID in middleware", cookie)
 
 		sessionUser := models.SessionUserClient{}
-		err = c.sessionServices.GetSession(cookie, &sessionUser)
+		err = c.SessionServices.GetSession(cookie, &sessionUser)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

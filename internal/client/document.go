@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) CreateClientDocument(ctx *gin.Context) {
-	date := time.Now()
+	date := time.Now().UTC()
 	userEmail, err := ctx.Cookie("user") // TODO "user" move to value/contants
 	baseResponse := dto.BaseResponse{
 		Message: "failed to extract cookie \"user\" from request",
@@ -46,7 +46,7 @@ func (c *Client) CreateClientDocument(ctx *gin.Context) {
 		return
 	}
 
-	err = c.documentServices.CreateDocument(&request, date, userEmail)
+	err = c.DocumentServices.CreateDocument(&request, date, userEmail)
 	baseResponse = dto.BaseResponse{
 		Message: "failed to create document",
 		Status:  http.StatusBadRequest,
@@ -93,7 +93,7 @@ func (c *Client) ShowClientDocument(ctx *gin.Context) {
 		return
 	}
 
-	document, err := c.documentServices.ShowDocument(&request)
+	document, err := c.DocumentServices.GetDocument(&request)
 	baseResponse = dto.BaseResponse{
 		Message: "failed to show document",
 		Status:  http.StatusBadRequest,
