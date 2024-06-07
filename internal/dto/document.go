@@ -7,9 +7,10 @@ import (
 )
 
 type CreateDocumentRequest struct {
-	Title     string `json:"title" validate:"required,min=5"`
-	Content   string `json:"content" validate:"required,min=5"`
-	ImagePath string `json:"image_path"`
+	Title          string    `json:"title" validate:"required,min=5"`
+	Content        string    `json:"content" validate:"required,min=5"`
+	ImagePath      string    `json:"image_path"`
+	ExpirationDate time.Time `json:"exp_date" validate:"expiration_date"`
 }
 
 type ShowDocumentRequest struct {
@@ -26,6 +27,7 @@ type ShowDocumentResponse struct {
 	ImagePath   string
 	AuthorID    uuid.UUID
 	DateCreated time.Time
+	DateExpired time.Time
 	BaseResponse
 }
 

@@ -13,4 +13,5 @@ type Document struct {
 	ImagePath   string
 	AuthorID    uuid.UUID
 	DateCreated time.Time
+	DateExpired time.Time
 }

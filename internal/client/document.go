@@ -110,6 +110,7 @@ func (c *Client) ShowClientDocument(ctx *gin.Context) {
 		ImagePath:   document.ImagePath,
 		AuthorID:    document.AuthorID,
 		DateCreated: document.DateCreated,
+		DateExpired: document.DateExpired,
 		BaseResponse: dto.BaseResponse{
 			Message: "document successfully read",
 			Status:  http.StatusOK,

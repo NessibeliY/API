@@ -56,6 +56,7 @@ func (ds *DocumentServices) CreateDocument(request *dto.CreateDocumentRequest, d
 		Content:     request.Content,
 		ImagePath:   request.ImagePath,
 		DateCreated: date,
+		DateExpired: request.ExpirationDate,
 		AuthorID:    authorID,
 	}
 

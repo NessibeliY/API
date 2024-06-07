@@ -14,7 +14,6 @@ import (
 	"github.com/NessibeliY/API/internal/config"
 	"github.com/NessibeliY/API/internal/database"
 	"github.com/NessibeliY/API/internal/services"
-	"github.com/NessibeliY/API/internal/telegram"
 	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
 )
@@ -48,9 +47,9 @@ func main() {
 	}
 
 	router := gin.Default()
-	botToken := "7190440176:AAF4MaUl12HIUPt94D148w7Pi8rXWKkEJMo"
-	chatID := "443146012"
-	telegram.SendTelegramNotification(botToken, chatID, "hello alem")
+	// botToken := "7190440176:AAF4MaUl12HIUPt94D148w7Pi8rXWKkEJMo"
+	// chatID := "443146012"
+	// telegram.SendTelegramNotification(botToken, chatID, "hello alem")
 
 	// curl https://api.telegram.org/bot7190440176:AAF4MaUl12HIUPt94D148w7Pi8rXWKkEJMo/getUpdates
 

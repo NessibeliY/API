@@ -20,11 +20,11 @@ func NewDocumentDatabase(db *sql.DB) *DocumentDatabase {
 
 func (d *DocumentDatabase) CreateDocument(ctx context.Context, document *models.Document) error {
 	query := `
-	INSERT INTO documents (title, content, image_path, author_id, date_created)
-	VALUES ($1, $2, $3, $4, $5);`
+	INSERT INTO documents (title, content, image_path, author_id, date_created, date_expired)
+	VALUES ($1, $2, $3, $4, $5, $6);`
 
-	_, err := d.db.ExecContext(ctx, query, document.Title,
-		document.Content, document.ImagePath, document.AuthorID, document.DateCreated)
+	_, err := d.db.ExecContext(ctx, query, document.Title, document.Content,
+		document.ImagePath, document.AuthorID, document.DateCreated, document.DateExpired)
 	if err != nil {
 		return err
 	}

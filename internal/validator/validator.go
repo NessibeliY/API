@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"time"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -10,8 +11,17 @@ func New() *validator.Validate {
 	validate := validator.New()
 	validate.RegisterValidation("password", ValidatePassword)
 	validate.RegisterValidation("username", ValidateUsername)
+	validate.RegisterValidation("expiration_date", ValidateExpirationDate)
 
 	return validate
+}
+
+func ValidateExpirationDate(field validator.FieldLevel) bool {
+	date, ok := field.Field().Interface().(time.Time)
+	if !ok {
+		return false
+	}
+	return date.After(time.Now())
 }
 
 func ValidatePassword(field validator.FieldLevel) bool {

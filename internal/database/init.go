@@ -30,7 +30,8 @@ func Init(db *sql.DB) error {
 		content text NOT NULL,
 		image_path text,
 		author_id uuid REFERENCES users(id) ON DELETE CASCADE,
-		date_created timestamp NOT NULL
+		date_created timestamp NOT NULL,
+		date_expired timestamp
 	);`
 
 	_, err = db.ExecContext(ctx, query2)
