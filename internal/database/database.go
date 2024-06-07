@@ -26,8 +26,9 @@ type SessionDatabase interface {
 
 type DocumentDatabase interface {
 	CreateDocument(context.Context, *models.Document) error
-	ReadDocument(context.Context, string) (*models.Document, error)
+	ReadDocument(context.Context, uint64) (*models.Document, error)
 	GetAuthorIDByEmail(context.Context, string) (uuid.UUID, error)
+	GetDocumentIDByTitle(context.Context, string) (uint64, error)
 }
 
 type Database struct {

@@ -26,7 +26,7 @@ func (c *Client) Login(ctx *gin.Context) {
 		return
 	}
 
-	err = c.userServices.LoginUser(&request)
+	err = c.UserServices.LoginUser(&request)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "email not found"})
@@ -45,7 +45,7 @@ func (c *Client) Login(ctx *gin.Context) {
 	}
 	ctx.SetCookie("user", sessionUser.Email, 200, "/", "localhost", false, true) //TODO remove session-id from cookie (use userID)
 
-	err = c.sessionServices.SetSession(sessionID, sessionUser, 100*time.Second)
+	err = c.SessionServices.SetSession(sessionID, sessionUser, 100*time.Second)
 	co, _ := ctx.Cookie("session-id")
 	fmt.Println("SessionID set", co)
 
@@ -84,7 +84,7 @@ func (c *Client) Signup(ctx *gin.Context) {
 		return
 	}
 
-	err = c.userServices.SignupUser(&request)
+	err = c.UserServices.SignupUser(&request)
 	switch {
 	case errors.Is(err, models.ErrDuplicateEmail):
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "this email already exists"})

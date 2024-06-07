@@ -24,15 +24,15 @@ type SessionServices interface {
 }
 
 type Client struct {
-	userServices     UserServices
-	sessionServices  SessionServices
-	documentServices DocumentServices
+	UserServices     UserServices
+	SessionServices  SessionServices
+	DocumentServices DocumentServices
 }
 
 func NewClient(srv *services.Services) *Client {
 	return &Client{
-		userServices:     srv.UserServices,
-		sessionServices:  srv.SessionServices,
-		documentServices: srv.DocumentServices,
+		UserServices:     srv.UserServices,
+		SessionServices:  srv.SessionServices,
+		DocumentServices: srv.DocumentServices,
 	}
 }

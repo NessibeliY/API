@@ -25,7 +25,7 @@ func Init(db *sql.DB) error {
 
 	query2 := `
 	CREATE TABLE IF NOT EXISTS documents (
-		id uuid PRIMARY KEY,
+		id bigserial PRIMARY KEY,
 		title text UNIQUE NOT NULL,
 		content text NOT NULL,
 		image_path text,

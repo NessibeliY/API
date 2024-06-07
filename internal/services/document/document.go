@@ -14,8 +14,9 @@ import (
 
 type DocumentDatabase interface {
 	CreateDocument(context.Context, *models.Document) error
-	ReadDocument(context.Context, string) (*models.Document, error)
+	ReadDocument(context.Context, uint64) (*models.Document, error)
 	GetAuthorIDByEmail(context.Context, string) (uuid.UUID, error)
+	GetDocumentIDByTitle(context.Context, string) (uint64, error)
 }
 
 type DocumentServices struct {
@@ -31,11 +32,15 @@ func NewDocumentServices(documentDatabase DocumentDatabase) *DocumentServices {
 func (ds *DocumentServices) CreateDocument(request *dto.CreateDocumentRequest, date time.Time, userEmail string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) // TODO move 3*time.Second to value/constants
 	defer cancel()
+	fmt.Println("\nin services\n", request)
 
 	// Check if document already exists
-	_, err := ds.documentDatabase.ReadDocument(ctx, request.Title)
+	_, err := ds.documentDatabase.GetDocumentIDByTitle(ctx, request.Title)
 	if err != sql.ErrNoRows {
 		return errors.New("Such title already exists")
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return err
 	}
 
 	authorID, err := ds.documentDatabase.GetAuthorIDByEmail(ctx, userEmail)
@@ -47,7 +52,6 @@ func (ds *DocumentServices) CreateDocument(request *dto.CreateDocumentRequest, d
 	}
 
 	processedRequest := &models.Document{
-		ID:          uuid.New(),
 		Title:       request.Title,
 		Content:     request.Content,
 		ImagePath:   request.ImagePath,
@@ -70,7 +74,7 @@ func (ds *DocumentServices) GetDocument(request *dto.ShowDocumentRequest) (*mode
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	document, err := ds.documentDatabase.ReadDocument(ctx, request.Title)
+	document, err := ds.documentDatabase.ReadDocument(ctx, request.DocumentID)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("Such title does not exist")
 	}

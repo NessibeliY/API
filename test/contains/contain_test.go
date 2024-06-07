@@ -1,4 +1,4 @@
-package pkg_test
+package contains_test
 
 import (
 	"testing"

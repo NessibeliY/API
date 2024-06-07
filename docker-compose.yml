@@ -41,10 +41,10 @@ services:
   #     retries: 5
   #   restart: always
 
-networks:
-  default:
-    external:
-      name: myNetwork
+# networks:
+#   default:
+#     external:
+#       name: myNetwork
 
 volumes:
   postgres_data:
