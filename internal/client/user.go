@@ -38,12 +38,12 @@ func (c *Client) Login(ctx *gin.Context) {
 
 	// If authentication is successful, set session
 	sessionID := uuid.New().String()
-	ctx.SetCookie("session-id", sessionID, 400, "/", "localhost", false, true) //TODO read about "/", "localhost", false, true
+	ctx.SetCookie("session-id", sessionID, 400, "/", "localhost", false, true) // TODO read about "/", "localhost", false, true
 	sessionUser := models.SessionUserClient{
 		Email:         request.Email,
 		Authenticated: true,
 	}
-	ctx.SetCookie("user", sessionUser.Email, 400, "/", "localhost", false, true) //TODO remove session-id from cookie (use userID)
+	ctx.SetCookie("user", sessionUser.Email, 400, "/", "localhost", false, true) // TODO remove session-id from cookie (use userID)
 
 	err = c.SessionServices.SetSession(sessionID, sessionUser, 300*time.Second)
 	co, _ := ctx.Cookie("session-id")

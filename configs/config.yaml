@@ -12,3 +12,6 @@ redis_password:
 redis_db: 0
 # redis_host: 172.18.0.4
 redis_host: localhost
+
+bot_token: 7190440176:AAF4MaUl12HIUPt94D148w7Pi8rXWKkEJMo
+chat_id: 443146012

@@ -3,6 +3,8 @@ package document
 import (
 	"context"
 	"database/sql"
+	"log"
+	"time"
 
 	"github.com/NessibeliY/API/internal/models"
 	"github.com/google/uuid"
@@ -60,7 +62,7 @@ func (d *DocumentDatabase) GetAuthorIDByEmail(ctx context.Context, userEmail str
 
 func (d *DocumentDatabase) ReadDocument(ctx context.Context, id uint64) (*models.Document, error) {
 	query := `
-	SELECT title, content, image_path, author_id, date_created
+	SELECT title, content, image_path, author_id, date_created, date_expired
 	FROM documents
 	WHERE id=$1;`
 
@@ -72,7 +74,42 @@ func (d *DocumentDatabase) ReadDocument(ctx context.Context, id uint64) (*models
 		&document.ImagePath,
 		&document.AuthorID,
 		&document.DateCreated,
+		&document.DateExpired,
 	)
 
 	return document, err
+}
+
+func (d *DocumentDatabase) CheckExpDates(ctx context.Context) ([]*models.Document, error) {
+	query := `
+	SELECT id, title, date_expired
+	FROM documents
+	WHERE date_expired BETWEEN NOW() AND NOW() + INTERVAL '7 days';`
+
+	rows, err := d.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var documents []*models.Document
+	for rows.Next() {
+		var (
+			id           uint64
+			title        string
+			date_expired time.Time
+		)
+		err := rows.Scan(&id, &title, &date_expired)
+		if err != nil {
+			continue
+		}
+
+		log.Println(id, title, date_expired)
+		documents = append(documents, &models.Document{ID: id, Title: title, DateExpired: date_expired})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return documents, nil
 }

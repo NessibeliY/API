@@ -14,8 +14,10 @@ import (
 	"github.com/NessibeliY/API/internal/config"
 	"github.com/NessibeliY/API/internal/database"
 	"github.com/NessibeliY/API/internal/services"
+	"github.com/NessibeliY/API/internal/telegram"
 	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
+	"github.com/go-co-op/gocron"
 )
 
 func main() {
@@ -58,6 +60,15 @@ func main() {
 	client := client.NewClient(services)
 
 	client.Routes(router)
+
+	telegramBot := telegram.NewTelegramBot(database.DocumentDatabase)
+	telegramBot.CheckExpDate()
+
+	go func() {
+		scheduler := gocron.NewScheduler(time.UTC)
+		telegramBot.Tgjob(scheduler)
+		scheduler.StartBlocking()
+	}()
 
 	// Graceful shutdown
 

@@ -2,11 +2,14 @@ package document_test
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/NessibeliY/API/internal/client"
 	"github.com/NessibeliY/API/internal/config"
@@ -14,35 +17,74 @@ import (
 	"github.com/NessibeliY/API/internal/services"
 	"github.com/NessibeliY/API/pkg"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupServer() *gin.Engine {
-	cfg, err := config.Load()
+func createDB(cfg *config.Config) (*sql.DB, error) {
+	dns := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		cfg.DBHost, cfg.DBPort, "test", "test", "test")
+
+	db, err := sql.Open("postgres", dns)
 	if err != nil {
-		log.Println(err, nil)
-		return nil
+		return nil, errors.Wrap(err, "opening test sql")
 	}
 
-	// connect to DB
-	db, err := pkg.OpenDB(cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "connection is not established")
+	}
+
+	log.Println("Connected to DB")
+
+	return db, nil
+}
+
+func dropDB(db *sql.DB, cfg *config.Config) error {
+	err := db.Ping()
+	if err != nil {
+		return fmt.Errorf("failed to connect to the database: %v", err)
+	}
+
+	query := fmt.Sprintf("DROP DATABASE IF EXISTS %s", cfg.DBName)
+
+	_, err = db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to drop the database: %v", err)
+	}
+
+	return nil
+}
+
+func setupServer() (*gin.Engine, *sql.DB, *config.Config) {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Println("error loading configs", err)
+		return nil, nil, nil
+	}
+
+	// create and connect to test DB
+	db, err := createDB(cfg)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil, nil
 	}
-	defer db.Close()
 
 	err = database.Init(db)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil, nil
 	}
 
 	// Set up Redis DB
 	rdb, err := pkg.OpenRedisDB(cfg)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil, nil
 	}
 
 	router := gin.Default()
@@ -53,21 +95,39 @@ func setupServer() *gin.Engine {
 
 	client.Routes(router)
 
-	err = router.Run(fmt.Sprintf(":%v", cfg.Port))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return router
+	return router, db, cfg
 }
 
-func runTestServer() *httptest.Server {
-	return httptest.NewServer(setupServer())
+func runTestServer() (*httptest.Server, *sql.DB, *config.Config) {
+	router, db, cfg := setupServer()
+	if router == nil {
+		fmt.Println("error is here***************")
+		return nil, nil, nil
+	}
+	return httptest.NewServer(router), db, cfg
 }
 
 func TestCreateClientDocument(t *testing.T) {
-	ts := runTestServer()
+	ts, db, cfg := runTestServer()
+	// if ts == nil || db == nil || cfg == nil {
+	// 	t.Fatalf("Failed to set up test server")
+	// }
+	if ts == nil {
+		t.Fatalf("Failed to set up test server")
+	}
+	if db == nil {
+		t.Fatalf("Failed to set up db")
+	}
+	if cfg == nil {
+		t.Fatalf("Failed to set up cfg")
+	}
 	defer ts.Close()
+	defer func() {
+		err := dropDB(db, cfg)
+		if err != nil {
+			log.Fatalf("Failed to drop test database: %v", err)
+		}
+	}()
 
 	t.Run("it should return 200 when health is ok", func(t *testing.T) {
 		resp, err := http.Get(fmt.Sprintf("%s/health", ts.URL))

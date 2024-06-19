@@ -29,6 +29,7 @@ type DocumentDatabase interface {
 	ReadDocument(context.Context, uint64) (*models.Document, error)
 	GetAuthorIDByEmail(context.Context, string) (uuid.UUID, error)
 	GetDocumentIDByTitle(context.Context, string) (uint64, error)
+	CheckExpDates(context.Context) ([]*models.Document, error)
 }
 
 type Database struct {
